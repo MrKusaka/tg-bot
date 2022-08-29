@@ -11,9 +11,9 @@ with open('data/keys.json', 'r', encoding='UTF-8') as f:
 
 
 @bot.message_handler(commands=["start"])
-def start(m, res=False):
-    bot.send_message(m.chat.id, 'Приветики-пистолетики, {0.first_name}! Я рифмоплёт, пиши сюда слово, /'
-                                'а я подберу рифму))'.format(m.from_user))
+def start(message):
+    bot.send_message(message.chat.id, 'Приветики-пистолетики, {0.first_name}! Я рифмоплёт, пиши сюда слово,'
+                                      ' а я подберу рифму))'.format(message.from_user))
 
 
 mas = []
@@ -31,29 +31,25 @@ def answer(text):
         if text[-2:] == q[-2:]:
             b.append(q)
     random.shuffle(b)
-    n = ', '.join(b)[:4096]
+    n = ', '.join(b)[:512]
     return n[:n.rfind(',')] or 'Извини, ничего не смог придумать('
-
-
 
 
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
     s = answer(message.text)
-
-    # первая реализация кнопки (пока что не дает отклик)
     keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton(text="Еще рифму!", callback_data="rhyme"))
-
-    # вторая реализация (отклик есть, но на название самой кнопки)
-    # markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    # btn1 = types.KeyboardButton("Еще рифму!")
-    # markup.add(btn1)
-
-    # Отправка ответа
-    if keyboard:
-        random.choice(s)
+    keyboard.add(types.InlineKeyboardButton(text="Еще рифму!", callback_data=message.text))
     bot.send_message(message.chat.id, s, reply_markup=keyboard)
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback(call):
+    bot.answer_callback_query(call.id)
+    if call.message:
+        keyboard1 = types.InlineKeyboardMarkup()
+        keyboard1.add(types.InlineKeyboardButton(text="Больше!", callback_data=call.data))
+        bot.send_message(call.message.chat.id, answer(call.data), reply_markup=keyboard1)
 
 
 bot.polling(none_stop=True, interval=0)
